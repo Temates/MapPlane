@@ -1,4 +1,5 @@
 package com.example.mapplane;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -13,6 +14,8 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
 
     private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "DataPoint.db";
+
+
 
     public static class DataPointEntry implements BaseColumns {
         public static final String TABLE_NAME = "data_points";
@@ -36,8 +39,8 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery("SELECT * FROM " + DataPointEntry.TABLE_NAME, null);
         if (cursor.moveToFirst()) {
             do {
-                float x = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_X));
-                float y = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_Y));
+                @SuppressLint("Range") float x = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_X));
+                @SuppressLint("Range") float y = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_Y));
                 PointF dataPoint = new PointF(x, y);
                 dataPoints.add(dataPoint);
             } while (cursor.moveToNext());
@@ -48,6 +51,12 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
 
     public DataPointDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    public void deleteAllDataPoints() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(DataPointEntry.TABLE_NAME, null, null);
+        db.close();
     }
 
     @Override

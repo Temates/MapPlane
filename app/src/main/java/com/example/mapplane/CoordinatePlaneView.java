@@ -104,4 +104,7 @@ public class CoordinatePlaneView extends View {
     public List<PointF> getDataPoints() {
         return dataPoints;
     }
+    public void setDataPoints(List<PointF> dataPoints) {
+        this.dataPoints = dataPoints;
+    }
 }

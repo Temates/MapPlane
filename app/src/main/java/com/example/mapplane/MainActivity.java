@@ -76,6 +76,21 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 }
             }
         });
+        Button clear = findViewById(R.id.clear);
+        clear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+
+                dbHelper.deleteAllDataPoints();
+                List<PointF> dataPoints = dbHelper.getAllDataPoints();
+                coordinatePlaneView.setDataPoints(dataPoints);
+                coordinatePlaneView.invalidate();
+//                displaySavedData();
+                Toast.makeText(MainActivity.this, "All data points deleted.", Toast.LENGTH_SHORT).show();
+
+            }
+        });
 
 
 
