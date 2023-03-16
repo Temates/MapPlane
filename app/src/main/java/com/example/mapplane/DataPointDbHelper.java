@@ -1,8 +1,13 @@
 package com.example.mapplane;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.PointF;
 import android.provider.BaseColumns;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DataPointDbHelper extends SQLiteOpenHelper {
 
@@ -24,6 +29,23 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + DataPointEntry.TABLE_NAME;
 
+    public List<PointF> getAllDataPoints() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        List<PointF> dataPoints = new ArrayList<>();
+
+        Cursor cursor = db.rawQuery("SELECT * FROM " + DataPointEntry.TABLE_NAME, null);
+        if (cursor.moveToFirst()) {
+            do {
+                float x = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_X));
+                float y = cursor.getFloat(cursor.getColumnIndex(DataPointEntry.COLUMN_NAME_Y));
+                PointF dataPoint = new PointF(x, y);
+                dataPoints.add(dataPoint);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return dataPoints;
+    }
+
     public DataPointDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -38,4 +60,5 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_ENTRIES);
         onCreate(db);
     }
+
 }

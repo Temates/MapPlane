@@ -92,20 +92,16 @@ public class CoordinatePlaneView extends View {
         }
     }
     public void addDataPoint(float x, float y) {
+        if (x < 0) {
+            x = 0;
+        }
+        if (y < 0) {
+            y = 0;
+        }
         dataPoints.add(new PointF(x, y));
         invalidate();
     }
-
-    private void insertDataPoint(float x, float y) {
-        DataPointDbHelper dbHelper = new DataPointDbHelper(getContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_X, x);
-        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_Y, y);
-
-        long newRowId = db.insert(DataPointDbHelper.DataPointEntry.TABLE_NAME, null, values);
+    public List<PointF> getDataPoints() {
+        return dataPoints;
     }
-
-
 }

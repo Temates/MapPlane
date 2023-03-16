@@ -1,11 +1,13 @@
 package com.example.mapplane;
 
+import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         setContentView(R.layout.activity_main);
 
         coordinatePlaneView = findViewById(R.id.coordinate_plane_view);
-
+        displaySavedData();
 
         // Add button to add random data point
         Button calibrate = findViewById(R.id.calibrate);
@@ -52,10 +54,26 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
             @Override
             public void onClick(View view) {
                 List<PointF> dataPoints = coordinatePlaneView.getDataPoints();
-                for (PointF dataPoint : dataPoints) {
-                    insertDataPoint(dataPoint.x, dataPoint.y);
+                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+                SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+                db.beginTransaction();
+                try {
+                    for (PointF dataPoint : dataPoints) {
+                        ContentValues values = new ContentValues();
+                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_X, dataPoint.x);
+                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_Y, dataPoint.y);
+
+                        db.insert(DataPointDbHelper.DataPointEntry.TABLE_NAME, null, values);
+                    }
+                    db.setTransactionSuccessful();
+                    Toast.makeText(MainActivity.this, "Data saved successfully", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e("Save Data", "Error saving data: " + e.getMessage());
+                } finally {
+                    db.endTransaction();
+                    dbHelper.close();
                 }
-                Toast.makeText(MainActivity.this, "Data saved!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -77,6 +95,15 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 //            Log.d("MQTT", "Error");
 //            e.printStackTrace();
 //        }
+    }
+    public void displaySavedData() {
+        DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+        List<PointF> dataPoints = dbHelper.getAllDataPoints();
+
+
+        for (PointF dataPoint : dataPoints) {
+            coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y);
+        }
     }
     private void generateRandomData() {
         // Generate random data points
