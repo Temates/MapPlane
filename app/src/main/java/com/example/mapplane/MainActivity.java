@@ -5,13 +5,18 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -30,13 +35,33 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
     double sum = 0;
     int count = 0;
     private CoordinatePlaneView coordinatePlaneView;
-
+    BottomNavigationView bottomNavigation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        bottomNavigation = findViewById(R.id.bottom_navigation);
+        bottomNavigation.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                Fragment selectedFragment = null;
 
+                switch (item.getItemId()){
+                    case R.id.edit_page:
+                        selectedFragment = new EditMap();
+                        break;
+                    case R.id.home_page:
+                        selectedFragment = new HomePage();
+                        break;
+
+                }
+
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, selectedFragment).commit();
+
+                return true;
+            }
+        });
         coordinatePlaneView = findViewById(R.id.coordinate_plane_view);
         displaySavedData();
 

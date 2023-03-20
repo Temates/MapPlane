@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/MapPlane/app/src/main/res/layout/activity_main.xml" value="0.23505434782608695" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/activity_main.xml" value="0.25" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_edit_map.xml" value="0.2526041666666667" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_home_page.xml" value="0.25052083333333336" />
+        <entry key="..\:/MapPlane/app/src/main/res/menu/bottom_navigation.xml" value="0.25052083333333336" />
       </map>
     </option>
   </component>
