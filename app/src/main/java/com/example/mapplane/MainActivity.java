@@ -13,6 +13,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -42,6 +44,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         bottomNavigation = findViewById(R.id.bottom_navigation);
+//      menjalankan fragment default
+      getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new HomePage()).commit();
+
         bottomNavigation.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -62,60 +67,60 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 return true;
             }
         });
-        coordinatePlaneView = findViewById(R.id.coordinate_plane_view);
-        displaySavedData();
+//        coordinatePlaneView = findViewById(R.id.coordinate_plane_view);
+//        displaySavedData();
 
-        // Add button to add random data point
-        Button calibrate = findViewById(R.id.calibrate);
-        calibrate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                generateRandomData();
-            }
-        });
-
-        Button saveDataButton = findViewById(R.id.savedatapoint);
-        saveDataButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                List<PointF> dataPoints = coordinatePlaneView.getDataPoints();
-                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
-                SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-                db.beginTransaction();
-                try {
-                    for (PointF dataPoint : dataPoints) {
-                        ContentValues values = new ContentValues();
-                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_X, dataPoint.x);
-                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_Y, dataPoint.y);
-
-                        db.insert(DataPointDbHelper.DataPointEntry.TABLE_NAME, null, values);
-                    }
-                    db.setTransactionSuccessful();
-                    Toast.makeText(MainActivity.this, "Data saved successfully", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Log.e("Save Data", "Error saving data: " + e.getMessage());
-                } finally {
-                    db.endTransaction();
-                    dbHelper.close();
-                }
-            }
-        });
-        Button clear = findViewById(R.id.clear);
-        clear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
-
-                dbHelper.deleteAllDataPoints();
-                List<PointF> dataPoints = dbHelper.getAllDataPoints();
-                coordinatePlaneView.setDataPoints(dataPoints);
-                coordinatePlaneView.invalidate();
-//                displaySavedData();
-                Toast.makeText(MainActivity.this, "All data points deleted.", Toast.LENGTH_SHORT).show();
-
-            }
-        });
+//        // Add button to add random data point
+//        Button calibrate = findViewById(R.id.calibrate);
+//        calibrate.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                generateRandomData();
+//            }
+//        });
+//
+//        Button saveDataButton = findViewById(R.id.savedatapoint);
+//        saveDataButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                List<PointF> dataPoints = coordinatePlaneView.getDataPoints();
+//                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+//                SQLiteDatabase db = dbHelper.getWritableDatabase();
+//
+//                db.beginTransaction();
+//                try {
+//                    for (PointF dataPoint : dataPoints) {
+//                        ContentValues values = new ContentValues();
+//                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_X, dataPoint.x);
+//                        values.put(DataPointDbHelper.DataPointEntry.COLUMN_NAME_Y, dataPoint.y);
+//
+//                        db.insert(DataPointDbHelper.DataPointEntry.TABLE_NAME, null, values);
+//                    }
+//                    db.setTransactionSuccessful();
+//                    Toast.makeText(MainActivity.this, "Data saved successfully", Toast.LENGTH_SHORT).show();
+//                } catch (Exception e) {
+//                    Log.e("Save Data", "Error saving data: " + e.getMessage());
+//                } finally {
+//                    db.endTransaction();
+//                    dbHelper.close();
+//                }
+//            }
+//        });
+//        Button clear = findViewById(R.id.clear);
+//        clear.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+//
+//                dbHelper.deleteAllDataPoints();
+//                List<PointF> dataPoints = dbHelper.getAllDataPoints();
+//                coordinatePlaneView.setDataPoints(dataPoints);
+//                coordinatePlaneView.invalidate();
+////                displaySavedData();
+//                Toast.makeText(MainActivity.this, "All data points deleted.", Toast.LENGTH_SHORT).show();
+//
+//            }
+//        });
 
 
 
@@ -136,23 +141,23 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 //            e.printStackTrace();
 //        }
     }
-    public void displaySavedData() {
-        DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
-        List<PointF> dataPoints = dbHelper.getAllDataPoints();
-
-
-        for (PointF dataPoint : dataPoints) {
-            coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y);
-        }
-    }
-    private void generateRandomData() {
-        // Generate random data points
-        Random random = new Random();
-        float x = random.nextFloat() * coordinatePlaneView.getWidth();
-        float y = random.nextFloat() * coordinatePlaneView.getHeight();
-        coordinatePlaneView.addDataPoint(x, y);
-
-    }
+//    public void displaySavedData() {
+//        DataPointDbHelper dbHelper = new DataPointDbHelper(MainActivity.this);
+//        List<PointF> dataPoints = dbHelper.getAllDataPoints();
+//
+//
+//        for (PointF dataPoint : dataPoints) {
+//            coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y);
+//        }
+//    }
+//    private void generateRandomData() {
+//        // Generate random data points
+//        Random random = new Random();
+//        float x = random.nextFloat() * coordinatePlaneView.getWidth();
+//        float y = random.nextFloat() * coordinatePlaneView.getHeight();
+//        coordinatePlaneView.addDataPoint(x, y);
+//
+//    }
 
     @Override
     public void connectionLost(Throwable cause) {

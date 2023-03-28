@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
+    android:background="#FFFDD0"
     tools:context=".HomePage">
 
     <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+    <com.example.mapplane.CoordinatePlaneView
+        android:id="@+id/coordinate_plane_view"
+        android:layout_width="316dp"
+        android:layout_height="534dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="70dp" />
 
-</FrameLayout>
+</RelativeLayout>
