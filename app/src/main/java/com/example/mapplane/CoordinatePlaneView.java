@@ -19,14 +19,22 @@ public class CoordinatePlaneView extends View {
 
     private List<PointF> dataPoints;
     private SQLiteDatabase database;
-
+    private List<PointF> currentPositionPoints = new ArrayList<>();
     public CoordinatePlaneView(Context context) {
         super(context);
     }
+    float mScale = 25.0f;
+
 
     public CoordinatePlaneView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         dataPoints = new ArrayList<>();
+
+//        // Set initial values for x and y at the center of the view
+//        int centerX = getWidth() / 2;
+//        int centerY = getHeight() / 2;
+//        PointF centerPoint = new PointF(centerX, centerY);
+//        currentPositionPoints.add(centerPoint);
 
 
     }
@@ -45,11 +53,14 @@ public class CoordinatePlaneView extends View {
         dataPaint.setColor(Color.RED);
         dataPaint.setStrokeWidth(10);
 
-//        for (PointF point : dataPoints) {
-//            canvas.drawPoint(point.x, point.y, dataPaint);
-//
-//
-//        }
+        Paint currentdataPaint = new Paint();
+        currentdataPaint.setColor(Color.GRAY);
+        currentdataPaint.setStrokeWidth(10);
+
+        for (PointF point : currentPositionPoints) {
+            canvas.drawPoint(point.x, point.y, currentdataPaint);
+            canvas.drawCircle(point.x, point.y, 10,currentdataPaint);
+        }
         for (int i = 0; i < dataPoints.size(); i++) {
             PointF point = dataPoints.get(i);
             canvas.drawPoint(point.x, point.y, dataPaint);
@@ -68,14 +79,17 @@ public class CoordinatePlaneView extends View {
 
     }
 
+
     private void drawCoordinatePlane(Canvas canvas) {
         // Set the color of the x and y axes
         Paint axisPaint = new Paint();
         axisPaint.setColor(Color.BLACK);
 
         // Draw the x and y axes
-        canvas.drawLine(0, getHeight() / 2, getWidth(), getHeight() / 2, axisPaint);
-        canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), axisPaint);
+        int centerX = getWidth() / 2;
+        int centerY = getHeight() / 2;
+        canvas.drawLine(centerX, 0, centerX, getHeight(), axisPaint);
+        canvas.drawLine(0, centerY, getWidth(), centerY, axisPaint);
 
         // Set the color of the grid lines
         Paint gridPaint = new Paint();
@@ -91,20 +105,46 @@ public class CoordinatePlaneView extends View {
             canvas.drawLine(0, i, getWidth(), i, gridPaint);
         }
     }
-    public void addDataPoint(float x, float y) {
-        if (x < 0) {
-            x = 0;
+
+    public void addDataPoint(float x, float y,boolean saveData) {
+        PointF point = new PointF(x, y);
+        if (saveData) {
+            dataPoints.add(point);
+        } else {
+            currentPositionPoints.clear();
+            currentPositionPoints.add(point);
         }
-        if (y < 0) {
-            y = 0;
-        }
-        dataPoints.add(new PointF(x, y));
         invalidate();
     }
+
+    public void trackPosition(float x, float y) {
+        // Check if the new position is within the bounds of the coordinate plane
+        if (x < 0 || x > getWidth() || y < 0 || y > getHeight()) {
+            return;
+        }
+
+        // Create a new data point to represent the current position
+        List<PointF> dataPoints = new ArrayList<>();
+        dataPoints.add(new PointF(x, y));
+
+        // Set the new data points and invalidate the view to update the display
+        setDataPoints(dataPoints);
+        invalidate();
+    }
+
     public List<PointF> getDataPoints() {
         return dataPoints;
     }
     public void setDataPoints(List<PointF> dataPoints) {
         this.dataPoints = dataPoints;
     }
+
+    public PointF mapToScreen(float x, float y) {
+        float screenX = getWidth() / 2 + x * mScale;
+        float screenY = getHeight() / 2 - y * mScale;
+        return new PointF(screenX, screenY);
+    }
+
+
+
 }

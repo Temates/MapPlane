@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".GeoFence">
+
+    <!-- TODO: Update blank fragment layout -->
+
+    <Button
+        android:id="@+id/addgeofence"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="add geofence"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        />
+
+
+    <LinearLayout
+        android:id="@+id/browse_list_fragment_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_below="@id/addgeofence"
+        android:orientation="vertical">
+
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/pullToRefresh"
+            android:layout_width="wrap_content"
+            android:layout_height="450dp">
+
+            <ListView
+                android:id="@+id/lv1"
+                android:layout_width="wrap_content"
+                android:layout_height="225dp"
+                android:divider="#FFFFFF"
+                android:dividerHeight="1dp"
+                android:listSelector="#000000" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </LinearLayout>
+
+</RelativeLayout>

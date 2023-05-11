@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".AddGeoFragment">
+
+    <!-- TODO: Update blank fragment layout -->
+    <EditText
+        android:id="@+id/geofence_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BedRoom"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:inputType="text|textCapSentences"
+        android:maxLines="1"
+        />
+
+    <com.example.mapplane.CoordinatePlaneView
+        android:id="@+id/coordinate_plane_view"
+        android:layout_width="316dp"
+        android:layout_height="534dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="70dp" />
+
+    <com.example.mapplane.GeoFenceView
+        android:id="@+id/geofence_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/clear"
+        android:layout_below="@id/geofence_name"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp" />
+
+    <Button
+        android:id="@+id/clear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_below="@id/coordinate_plane_view"
+        android:layout_alignParentRight="true"
+        android:layout_toRightOf="@id/calibrate"
+        android:text="Clear"
+        />
+
+    <Button
+        android:id="@+id/savedatapoint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginStart="24dp"
+        android:text="Save"
+        android:layout_below="@id/coordinate_plane_view"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@id/calibrate"
+        />
+
+    <Button
+        android:id="@+id/calibrate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/coordinate_plane_view"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+
+        android:text="Calibrate" />
+
+</RelativeLayout>

@@ -16,7 +16,7 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "DataPoint.db";
 
 
-
+    //table map
     public static class DataPointEntry implements BaseColumns {
         public static final String TABLE_NAME = "data_points";
         public static final String COLUMN_NAME_X = "x";
