@@ -4,9 +4,11 @@
     import android.database.Cursor;
     import android.database.sqlite.SQLiteDatabase;
     import android.database.sqlite.SQLiteOpenHelper;
+    import android.graphics.PointF;
     import android.provider.BaseColumns;
 
     import java.util.ArrayList;
+    import java.util.List;
 
     public class GeoFenceDbHelper extends SQLiteOpenHelper {
 
@@ -88,5 +90,31 @@
             cursor.close();
             return names;
 
+        }
+        public List<PointF> getAllGeofencePoints(String geofenceId) {
+            List<PointF> dataPoints = new ArrayList<>();
+            SQLiteDatabase db = this.getReadableDatabase();
+            String[] projection = {
+                    GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X,
+                    GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y
+            };
+            String selection = GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID + " = ?";
+            String[] selectionArgs = {geofenceId};
+            Cursor cursor = db.query(
+                    GeoFenceDbHelper.GeofenceDataEntry.TABLE_NAME,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+            while (cursor.moveToNext()) {
+                float x = cursor.getFloat(cursor.getColumnIndexOrThrow(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X));
+                float y = cursor.getFloat(cursor.getColumnIndexOrThrow(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y));
+                dataPoints.add(new PointF(x, y));
+            }
+            cursor.close();
+            return dataPoints;
         }
     }

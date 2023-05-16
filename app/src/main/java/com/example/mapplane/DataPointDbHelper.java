@@ -69,5 +69,31 @@ public class DataPointDbHelper extends SQLiteOpenHelper {
         db.execSQL(SQL_DELETE_ENTRIES);
         onCreate(db);
     }
+    public List<PointF> getAllGeofencePoints(String geofenceId) {
+        List<PointF> dataPoints = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String[] projection = {
+                DataPointEntry.COLUMN_NAME_X,
+                DataPointEntry.COLUMN_NAME_Y
+        };
+        String selection = DataPointEntry._ID + " = ?";
+        String[] selectionArgs = {geofenceId};
+        Cursor cursor = db.query(
+                DataPointEntry.TABLE_NAME,
+                projection,
+                selection,
+                selectionArgs,
+                null,
+                null,
+                null
+        );
+        while (cursor.moveToNext()) {
+            float x = cursor.getFloat(cursor.getColumnIndexOrThrow(DataPointEntry.COLUMN_NAME_X));
+            float y = cursor.getFloat(cursor.getColumnIndexOrThrow(DataPointEntry.COLUMN_NAME_Y));
+            dataPoints.add(new PointF(x, y));
+        }
+        cursor.close();
+        return dataPoints;
+    }
 
 }

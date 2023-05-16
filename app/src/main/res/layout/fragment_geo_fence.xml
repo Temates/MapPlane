@@ -26,10 +26,6 @@
         android:orientation="vertical">
 
 
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/pullToRefresh"
-            android:layout_width="wrap_content"
-            android:layout_height="450dp">
 
             <ListView
                 android:id="@+id/lv1"
@@ -38,7 +34,7 @@
                 android:divider="#FFFFFF"
                 android:dividerHeight="1dp"
                 android:listSelector="#000000" />
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
     </LinearLayout>
 
 </RelativeLayout>

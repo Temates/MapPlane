@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.view.View;
@@ -117,20 +118,7 @@ public class CoordinatePlaneView extends View {
         invalidate();
     }
 
-    public void trackPosition(float x, float y) {
-        // Check if the new position is within the bounds of the coordinate plane
-        if (x < 0 || x > getWidth() || y < 0 || y > getHeight()) {
-            return;
-        }
 
-        // Create a new data point to represent the current position
-        List<PointF> dataPoints = new ArrayList<>();
-        dataPoints.add(new PointF(x, y));
-
-        // Set the new data points and invalidate the view to update the display
-        setDataPoints(dataPoints);
-        invalidate();
-    }
 
     public List<PointF> getDataPoints() {
         return dataPoints;

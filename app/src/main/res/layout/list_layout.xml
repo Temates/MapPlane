@@ -14,13 +14,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
+
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_baseline_edit_24"
-            android:layout_marginTop="10dp"
-            android:layout_alignParentEnd="true"/>
-        <ImageView
+            android:id="@+id/delete_data"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_baseline_delete_24"

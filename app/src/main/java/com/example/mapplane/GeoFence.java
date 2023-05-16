@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,6 +41,9 @@ public class GeoFence extends Fragment {
     GoogleSignInOptions gso;
     GoogleSignInClient gsc;
     GeoFenceDbHelper geoDB;
+    SQLiteDatabase sqLiteDatabase;
+    String name[];
+    int id[];
 
     ListView listView;
 
@@ -61,11 +65,11 @@ public class GeoFence extends Fragment {
         // Inflate the layout for this fragment
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
+        geoDB = new GeoFenceDbHelper(getContext());
 
 
-        //pull refresh
+
         View view = inflater.inflate(R.layout.fragment_geo_fence,container,false);
-        final SwipeRefreshLayout pullToRefresh = view.findViewById(R.id.pullToRefresh);
         Button addGeo = view.findViewById(R.id.addgeofence);
         addGeo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -74,43 +78,79 @@ public class GeoFence extends Fragment {
                 addGeofence(view);
             }
         });
-        pullToRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
 
+
+        displaylist(view);
+
+
+
+        return view;
+    }
+
+    public void displaylist(View view) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(new Runnable() {
             @Override
-            public void onRefresh() {
-                executor.execute(new Runnable() {
+            public void run() {
+
+                //Background work here
+
+                // use the data here
+                try {
+                    Executor executor = Executors.newSingleThreadExecutor();
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Perform long-running operation in background thread
+                            // ...
+                            sqLiteDatabase = geoDB.getReadableDatabase();
+                            Cursor cursor = sqLiteDatabase.rawQuery("select * from geofence",null);
+                            if (cursor.getCount()>0){
+                                id = new int[cursor.getCount()];
+                                name = new String[cursor.getCount()];
+                                int i = 0;
+                                while (cursor.moveToNext()){
+                                    id[i] = cursor.getInt(0);
+                                    name[i] = cursor.getString(1);
+                                    i++;
+                                }
+                                cursor.close();
+
+                            }
+
+
+                            // Update UI on the main thread
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // Update UI elements with new data
+                                    // ...
+                                    dis(view);
+
+
+                                }
+                            });
+                        }
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.post(new Runnable() {
                     @Override
                     public void run() {
-
-                        //Background work here
-                        Bundle bundle = getArguments();
-                        if (bundle != null) {
-                            String email = bundle.getString("email");
-                            String name = bundle.getString("name");
-
-                            // use the data here
-                            try {
-//                                Reqtable(email,name);
-                                ArrayList<String> names = geoDB.getGeofenceNames();
-                                CustomAdapter adapter = new CustomAdapter(names);
-                                ListView listView = view.findViewById(R.id.lv1);
-                                listView.setAdapter(adapter);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                //UI Thread work here
-                            }
-                        });
+                        //UI Thread work here
                     }
                 });
             }
         });
+    }
 
-        return view;
+    public void dis(View view){
+        CustomAdapter adapter = new CustomAdapter(name,id);
+        ListView listView = view.findViewById(R.id.lv1);
+        listView.setAdapter(adapter);
     }
 
 
@@ -124,6 +164,11 @@ public class GeoFence extends Fragment {
 
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        geoDB.close();
+    }
 //    private void Reqtable(String email, String name) throws Exception {
 //
 //        String url = "http://192.168.0.9:3000/list_user/";

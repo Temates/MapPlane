@@ -57,13 +57,14 @@ public class EditMap extends Fragment {
         coordinatePlaneView = view.findViewById(R.id.coordinate_plane_view);
         displaySavedData();
 
+
         // Add button to add random data point
         Button calibrate = view.findViewById(R.id.calibrate);
         calibrate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                generateDatapoint(x,y,true);
+                generateDatapoint();
             }
         });
 
@@ -93,8 +94,31 @@ public class EditMap extends Fragment {
 
 
 
-        public void generateDatapoint(float x, float y, boolean con) {
-            isCalibrated = true;
+        public void generateDatapoint() {
+
+            float x = getArguments().getFloat("x");
+            float y = getArguments().getFloat("y");
+
+            // Inflate the layout for this fragment
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
+            executor.execute(() -> {
+                //Background work here
+
+                PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
+                xmap = screenPoint.x;
+                ymap = screenPoint.y;
+                Log.d("MQTT", "x: "+x);
+                Log.d("MQTT", "x: "+y);
+
+                handler.post(() -> {
+                    // Add current position to coordinate plane view
+                    coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, true);
+                    coordinatePlaneView.invalidate();
+
+                    //UI Thread work here
+                });
+            });
         }
 
 
@@ -172,29 +196,6 @@ public class EditMap extends Fragment {
         executorService.shutdown();
     }
 
-    public void updateCalibrationData(float x, float y) {
-        // Inflate the layout for this fragment
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            //Background work here
-            handler.post(() -> {
-
-                PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
-                xmap = screenPoint.x;
-                ymap = screenPoint.y;
-                Log.d("MQTT", "x: "+x);
-                Log.d("MQTT", "x: "+y);
-                // Add current position to coordinate plane view
-                coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, true);
-                coordinatePlaneView.invalidate();
-                isCalibrated = false;
-                //UI Thread work here
-            });
-        });
-    }
-
-
     private class DeleteAllDataRunnable implements Runnable {
         @Override
         public void run() {
@@ -213,24 +214,28 @@ public class EditMap extends Fragment {
         }
     }
     public void updateData(float x, float y){
-        // Inflate the layout for this fragment
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            //Background work here
-            handler.post(() -> {
+        if (coordinatePlaneView != null) {
+            // Inflate the layout for this fragment
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
+            executor.execute(() -> {
+                //Background work here
 
-                PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
+                PointF screenPoint = coordinatePlaneView.mapToScreen(x, y);
                 xmap = screenPoint.x;
                 ymap = screenPoint.y;
-                Log.d("MQTT", "x: "+x);
-                Log.d("MQTT", "x: "+y);
+                Log.d("MQTT", "x: " + x);
+                Log.d("MQTT", "x: " + y);
                 // Add current position to coordinate plane view
                 coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, false);
                 coordinatePlaneView.invalidate();
-                //UI Thread work here
+                handler.post(() -> {
+
+                    //UI Thread work here
+                });
             });
-        });
+        }
+
     }
 
 }
