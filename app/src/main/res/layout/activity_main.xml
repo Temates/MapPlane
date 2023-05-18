@@ -8,12 +8,12 @@
     tools:context=".MainActivity">
 
 
-<!--    <com.example.mapplane.CoordinatePlaneView-->
-<!--        android:id="@+id/coordinate_plane_view"-->
-<!--        android:layout_width="316dp"-->
-<!--        android:layout_height="534dp"-->
-<!--        android:layout_centerHorizontal="true"-->
-<!--        android:layout_marginTop="70dp" />-->
+    <com.example.mapplane.CoordinatePlaneView
+        android:id="@+id/coordinate_plane_view"
+        android:layout_width="316dp"
+        android:layout_height="534dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="70dp" />
 
 <!--    <Button-->
 <!--        android:id="@+id/clear"-->

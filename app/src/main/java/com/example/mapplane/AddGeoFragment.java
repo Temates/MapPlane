@@ -217,10 +217,10 @@ public class AddGeoFragment extends Fragment {
                 for (PointF dataPoint : dataPoints) {
                     coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y, true);
                 }
-                coordinatePlaneView.invalidate();
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        coordinatePlaneView.invalidate();
 
                     }
                 });
