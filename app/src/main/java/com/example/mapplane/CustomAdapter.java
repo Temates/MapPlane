@@ -87,6 +87,7 @@ public class CustomAdapter extends BaseAdapter {
                         }
                     }
                     id = newId;
+
                     // Update the adapter data and notify the change
                     updateData(name, id);
                     notifyDataSetChanged();

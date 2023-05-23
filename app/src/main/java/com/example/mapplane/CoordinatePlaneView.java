@@ -24,7 +24,7 @@ public class CoordinatePlaneView extends View {
     public CoordinatePlaneView(Context context) {
         super(context);
     }
-    float mScale = 25.0f;
+    float mScale = 110.0f;
 
 
     public CoordinatePlaneView(Context context, @Nullable AttributeSet attrs) {

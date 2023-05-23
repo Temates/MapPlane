@@ -2,4 +2,6 @@
     <string name="app_name">MapPlane</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="my_server_client_id">844300913099-r6hmjo4drjojlngh5ue65qecuibmt4s3.apps.googleusercontent.com</string>
+
 </resources>

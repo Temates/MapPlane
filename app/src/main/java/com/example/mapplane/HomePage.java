@@ -21,6 +21,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,6 +38,7 @@ public class HomePage extends Fragment {
     GoogleSignInClient gsc;
     GoogleSignInOptions gso;
 
+    FirebaseAuth firebaseAuth;
 
     private List<PointF> currentPositionPoints = new ArrayList<>();
     private Context context;
@@ -89,13 +91,17 @@ public class HomePage extends Fragment {
     }
 
     private void SignOut() {
+        FirebaseAuth.getInstance().signOut();
         gsc.signOut().addOnCompleteListener(getActivity(), new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
-                startActivity(new Intent(getActivity(),Auth.class));
+                // Google Sign-In account cache cleared
+                // Proceed with signing in a new user
+                startActivity(new Intent(getActivity(), Auth.class));
                 getActivity().finish();
             }
         });
+
     }
 
     public void displaySavedData() {

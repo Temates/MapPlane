@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -34,6 +35,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.snatik.polygon.Point;
 import com.snatik.polygon.Polygon;
 
@@ -48,6 +51,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -83,11 +92,11 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 .build();
         gsc = GoogleSignIn.getClient(this,gso);
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-        String Name = account.getDisplayName();
-        String Email = account.getEmail();
-        Bundle bundle = new Bundle();
-        bundle.putString("email", Email); // replace "key" and "value" with your own data
-        bundle.putString("name", Name); // replace "key" and "value" with your own data
+//        String Name = account.getDisplayName();
+//        String Email = account.getEmail();
+//        Bundle bundle = new Bundle();
+//        bundle.putString("email", Email); // replace "key" and "value" with your own data
+//        bundle.putString("name", Name); // replace "key" and "value" with your own data
         connectmqtt();
 
         geoDB = new GeoFenceDbHelper(this);
@@ -143,11 +152,9 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 switch (item.getItemId()){
                     case R.id.edit_page:
                         selectedFragment = new EditMap();
-                        selectedFragment.setArguments(bundle);
                         break;
                     case R.id.home_page:
                         selectedFragment = homePage;
-                        selectedFragment.setArguments(bundle);
                         homePage.setGoogleSignInClient(gsc);
 
 
@@ -193,7 +200,6 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                         break;
                     case R.id.geofence_page:
                         selectedFragment = new GeoFence();
-                        selectedFragment.setArguments(bundle);
                         break;
 
                 }
@@ -218,8 +224,8 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 //            client = new MqttClient("tcp://192.168.183.12:1883", clientId, new MemoryPersistence());
                 client.setCallback(this);
                 client.connect();
-                client.subscribe("nandox", 0);
-                client.subscribe("nandoy", 0);
+                client.subscribe("corx", 0);
+                client.subscribe("cory", 0);
                 Log.d("MQTT", "subs");
                 Thread.sleep(5000);
 
@@ -243,17 +249,6 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
         Point point = new Point(x, y);
         // Check if the coordinate is inside any of the geofences
         boolean insideAnyGeofence = false;
-//        // Iterate over the geofences and check if the coordinate is inside any of them
-//        for (int i = 0; i < polygons.size(); i++) {
-//            Polygon polygon = polygons.get(i);
-//            if (polygon.contains(point)) {
-//                // The coordinate is inside the geofence
-//                String geofenceName = geofenceNames.get(i);
-//                Log.d("Geofence", "Coordinate is inside geofence: " + geofenceName);
-//                showNotification("Geofence Alert", "Lansia sedang berada di: " + geofenceName);
-//                // Perform any actions you need when the coordinate is inside a geofence
-//            }
-//        }
         int geofenceIndex = 0;
             for (int i = 0; i < polygons.size(); i++) {
                 Polygon polygon = polygons.get(i);
@@ -270,6 +265,59 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
                 isInsideGeofence = true;
                 String geofenceName = geofenceNames.get(geofenceIndex);
                 showNotification("Geofence Entered", "Lansia sedang berada di: " + geofenceName);
+                String message = "Lansia sedang berada di:" + geofenceName;
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                executor.submit(() -> {
+                    try {
+//                        String url = "http://192.168.2.6:8000/geofence/send";
+                        String url = "http://192.168.4.199:8000/geofence/notifikasi";
+                        URL apiURL = new URL(url);
+
+                        // Create the connection
+                        HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
+                        connection.setRequestMethod("GET");
+                        connection.setRequestProperty("Content-Type", "application/json");
+
+                        connection.setDoOutput(true);
+
+                        // Create the request body with the geofence object as JSON
+                        // Retrieve the user_id from SharedPreferences
+                        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+                        String userIdJson = sharedPreferences.getString("user_id", null); // Retrieve the JSON string
+
+                        JsonObject geofenceObject = new JsonObject();
+                        geofenceObject.addProperty("message", message);
+                        geofenceObject.addProperty("user_id", userIdJson);
+
+                        String requestBody = geofenceObject.toString();
+                        Log.d("API", String.valueOf(geofenceObject));
+
+                        // Write the request body to the connection
+                        OutputStream outputStream = connection.getOutputStream();
+                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+                        writer.write(requestBody);
+                        writer.flush();
+                        writer.close();
+                        outputStream.close();
+
+                        // Send the request to the Flask API
+                        int responseCode = connection.getResponseCode();
+                        if (responseCode == HttpURLConnection.HTTP_OK) {
+                            // Geofence object sent successfully
+                            Log.d("API", "Geofence object sent successfully");
+                        } else {
+                            // Error sending the geofence object
+                            Log.e("API", "Error sending geofence object: " + responseCode);
+                        }
+
+                        // Close the connection
+                        connection.disconnect();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
                 // Perform any actions you need when the coordinate enters a geofence
             } else if (!insideAnyGeofence && isInsideGeofence) {
                 // The coordinate left the geofence
@@ -338,7 +386,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        if ( topic.equals("nandoy")) {
+        if ( topic.equals("cory")) {
             String payload2 = new String(message.getPayload());
             try {
                 val2 = Float.parseFloat(payload2);
@@ -347,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements MqttCallback {
 //                Log.e("MQTT", "Error parsing float value from payload: " + payload2, e);
             }
         }
-        if ( topic.equals("nandox")) {
+        if ( topic.equals("corx")) {
             String payload1 = new String(message.getPayload());
             try {
                 val1 = Float.parseFloat(payload1);

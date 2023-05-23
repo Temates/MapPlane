@@ -225,7 +225,7 @@ public class EditMap extends Fragment {
                 xmap = screenPoint.x;
                 ymap = screenPoint.y;
                 Log.d("MQTT", "x: " + x);
-                Log.d("MQTT", "x: " + y);
+                Log.d("MQTT", "y: " + y);
                 // Add current position to coordinate plane view
                 coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, false);
                 coordinatePlaneView.invalidate();

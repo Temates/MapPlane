@@ -1,9 +1,10 @@
 package com.example.mapplane;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.PointF;
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -19,12 +20,23 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.Type;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 
 public class AddGeoFragment extends Fragment {
     private CoordinatePlaneView coordinatePlaneView;
@@ -58,6 +70,16 @@ public class AddGeoFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_geo, container, false);
+        // Retrieve the session cookies from SharedPreferences
+        SharedPreferences sharedPreferences = getContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        String sessionCookiesJson = sharedPreferences.getString("sessionCookies", null); // Retrieve the JSON string
+        if (sessionCookiesJson != null) {
+            Gson gson = new Gson();
+            Type type = new TypeToken<List<String>>() {}.getType();
+            List<String> sessionCookies = gson.fromJson(sessionCookiesJson, type); // Convert the JSON string to List<String>
+            // Use the sessionCookies list as needed
+        }
+
         // Get a reference to the CoordinatePlaneView
         coordinatePlaneView = view.findViewById(R.id.coordinate_plane_view);
         geoFenceView = view.findViewById(R.id.geofence_view);
@@ -159,15 +181,72 @@ public class AddGeoFragment extends Fragment {
                 geofenceValues.put(GeoFenceDbHelper.GeofenceEntry.COLUMN_NAME_NAME, location_name);
                 long geofenceId = db.insert(GeoFenceDbHelper.GeofenceEntry.TABLE_NAME, null, geofenceValues);
                 Log.d("MQTT", "jalan");
-
+                List<ContentValues> contentValuesList = new ArrayList<>();
                 for (PointF point : GeoFencedataPoints) {
                     ContentValues values = new ContentValues();
-                    values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID, geofenceId);
+                    values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID, 1);
                     values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X, point.x);
                     values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y, point.y);
+                    contentValuesList.add(values);
                     db.insert(GeoFenceDbHelper.GeofenceDataEntry.TABLE_NAME, null, values);
-
                 }
+                Log.d("API", String.valueOf(contentValuesList));
+                // Use an executor to send the geofence object to the Flask API
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                executor.submit(() -> {
+                    try {
+//                        String url = "http://192.168.2.6:8000/geofence/send";
+                        String url = "http://192.168.4.199:8000/geofence/send";
+                        URL apiURL = new URL(url);
+
+                        // Create the connection
+                        HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
+                        connection.setRequestMethod("GET");
+                        connection.setRequestProperty("Content-Type", "application/json");
+
+                        connection.setDoOutput(true);
+
+                        // Create the request body with the geofence object as JSON
+                        // Retrieve the user_id from SharedPreferences
+                        SharedPreferences sharedPreferences = getContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+                        String userIdJson = sharedPreferences.getString("user_id", null); // Retrieve the JSON string
+
+
+                        Gson gson = new Gson();
+                        String dataPointsJson = contentValuesList.toString();
+                        JsonObject geofenceObject = new JsonObject();
+                        geofenceObject.addProperty("nama_lokasi", location_name);
+                        geofenceObject.addProperty("user_id", userIdJson);
+                        geofenceObject.addProperty("dataPoints",  dataPointsJson);
+                        String requestBody = geofenceObject.toString();
+                        Log.d("API", String.valueOf(geofenceObject));
+
+                        // Write the request body to the connection
+                        OutputStream outputStream = connection.getOutputStream();
+                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+                        writer.write(requestBody);
+                        writer.flush();
+                        writer.close();
+                        outputStream.close();
+
+                        // Send the request to the Flask API
+                        int responseCode = connection.getResponseCode();
+                        if (responseCode == HttpURLConnection.HTTP_OK) {
+                            // Geofence object sent successfully
+                            Log.d("API", "Geofence object sent successfully");
+                        } else {
+                            // Error sending the geofence object
+                            Log.e("API", "Error sending geofence object: " + responseCode);
+                        }
+
+                        // Close the connection
+                        connection.disconnect();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
                 // Clear the temporary PointF variable
                 GeoFencedataPoints.clear();
                 // Close the database
@@ -238,8 +317,8 @@ public class AddGeoFragment extends Fragment {
             PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
             xmap = screenPoint.x;
             ymap = screenPoint.y;
-            Log.d("MQTT", "x: "+x);
-            Log.d("MQTT", "y: "+y);
+//            Log.d("MQTT", "x: "+x);
+//            Log.d("MQTT", "y: "+y);
             // Add current position to coordinate plane view
             //Background work here
             handler.post(() -> {
