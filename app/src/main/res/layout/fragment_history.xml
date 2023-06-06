@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".HistoryFragment">
+
+
+    <!-- TODO: Update blank fragment layout -->
+        <LinearLayout
+            android:id="@+id/button_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentTop="true"
+            android:gravity="center_horizontal">
+
+            <Button
+                android:id="@+id/back_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="3dp"
+                android:backgroundTint="@color/teal_200"
+                android:textColor="@color/white"
+                android:text="Back"
+                android:textSize="13sp"  />
+            <Button
+                android:id="@+id/start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="3dp"
+                android:backgroundTint="@color/teal_200"
+                android:textColor="@color/white"
+                android:text="Get Data"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/buttons_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Time:"
+                android:layout_margin="3dp"/>
+            <Button
+                android:id="@+id/starttime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="3dp"
+                android:text="start"
+                android:backgroundTint="@color/teal_200"
+                android:textColor="@color/white" />
+
+            <Button
+                android:id="@+id/endtime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="3dp"
+                android:text="end"
+                android:backgroundTint="@color/teal_200"
+                android:textColor="@color/white" />
+
+            <Button
+                android:id="@+id/date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="3dp"
+                android:text="date"
+                android:backgroundTint="@color/teal_200"
+                android:textColor="@color/white" />
+
+
+        </LinearLayout>
+
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp">
+            <com.example.mapplane.CoordinatePlaneView
+                android:id="@+id/coordinate_plane_view"
+                android:layout_width="350dp"
+                android:layout_height="500dp"
+                android:layout_centerHorizontal="true"
+                />
+            <com.example.mapplane.GeofencePlot
+                android:id="@+id/geofence_plot"
+                android:layout_width="350dp"
+                android:layout_height="500dp"
+                android:layout_centerHorizontal="true"
+                />
+        </RelativeLayout>
+            <ListView
+                android:id="@+id/lv1"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_margin="3dp" />
+
+
+</LinearLayout>

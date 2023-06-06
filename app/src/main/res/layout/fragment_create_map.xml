@@ -3,14 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
     android:orientation="vertical"
-    tools:context=".AddGeoFragment">
+    android:background="@color/white"
+    tools:context=".CreateMap">
 
     <!-- TODO: Update blank fragment layout -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
         android:orientation="horizontal">
 
         <Button
@@ -18,46 +19,66 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="10dp"
+            android:layout_margin="3dp"
             android:backgroundTint="@color/teal_200"
             android:textColor="@color/white"
             android:text="Back"
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/geofence_name"
+            android:id="@+id/maps_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="15"
-            android:layout_margin="10dp"
+            android:layout_margin="3dp"
             android:inputType="text|textCapSentences"
             android:maxLines="1"
-            android:hint="Bedroom" />
+            android:hint="Home" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/connect_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:text="Connect"
+            android:textSize="15sp" />
+        <EditText
+            android:id="@+id/topic_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="17"
+            android:layout_margin="3dp"
+            android:maxLines="1"
+            android:hint="Topic" />
+
     </LinearLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
+        android:layout_marginTop="10dp" >
+
     <com.example.mapplane.CoordinatePlaneView
         android:id="@+id/coordinate_plane_view"
         android:layout_width="350dp"
         android:layout_height="500dp"
         android:layout_centerHorizontal="true"
-     />
-    <com.example.mapplane.GeoFenceView
-        android:id="@+id/geofence_view"
-        android:layout_width="350dp"
-        android:layout_height="500dp"
-        android:layout_centerHorizontal="true"
-    />
+        />
     </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:layout_marginTop="12dp">
+        android:layout_marginTop="5dp">
 
         <Button
             android:id="@+id/clear"
@@ -86,5 +107,4 @@
             android:text="Calibrate"
             android:textColor="@color/white" />
     </LinearLayout>
-
 </LinearLayout>

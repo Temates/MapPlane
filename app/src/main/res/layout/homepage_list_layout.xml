@@ -11,22 +11,29 @@
         android:textSize="16sp"
         android:text="ListViewSqlite"
         android:padding="8dp"/>
+
     <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
+        <ImageView
+            android:id="@+id/show_data"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="10dp"
+            android:src="@drawable/ic_baseline_play_arrow_24" />
 
         <ImageView
             android:id="@+id/delete_data"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_baseline_delete_24"
-            android:layout_marginTop="10dp"
             android:layout_marginLeft="5dp"
-            />
+            android:layout_marginTop="10dp"
+            android:src="@drawable/ic_baseline_delete_24" />
+
 
     </RelativeLayout>
-
-
 
 </RelativeLayout>

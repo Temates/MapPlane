@@ -8,6 +8,7 @@ import android.graphics.PointF;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -25,6 +26,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.json.JSONObject;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,9 +47,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class AddGeoFragment extends Fragment {
+public class AddGeoFragment extends Fragment implements MqttCallback {
     private CoordinatePlaneView coordinatePlaneView;
     private GeoFenceView geoFenceView;
+    MqttClient client = null;
+    String topics;
     float x = 0;
     float y = 0;
     float xmap= 0;
@@ -48,6 +59,17 @@ public class AddGeoFragment extends Fragment {
     private EditText editText;
     PointF tempPointF;
     String location_name;
+    String datapointId;
+    private List<PointF> currentPositionPoints = new ArrayList<>();
+    showMapFragment showMapFragment;
+
+    public static AddGeoFragment newInstance(String datapointId) {
+        AddGeoFragment fragment = new AddGeoFragment();
+        Bundle args = new Bundle();
+        args.putString("datapointId", datapointId);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public AddGeoFragment() {
         // Required empty public constructor
@@ -70,16 +92,11 @@ public class AddGeoFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_geo, container, false);
-        // Retrieve the session cookies from SharedPreferences
-        SharedPreferences sharedPreferences = getContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        String sessionCookiesJson = sharedPreferences.getString("sessionCookies", null); // Retrieve the JSON string
-        if (sessionCookiesJson != null) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<String>>() {}.getType();
-            List<String> sessionCookies = gson.fromJson(sessionCookiesJson, type); // Convert the JSON string to List<String>
-            // Use the sessionCookies list as needed
+        if (getArguments() != null) {
+            datapointId = getArguments().getString("datapointId");
+            connectmqtt(datapointId);
+            Log.d("MQTT", "datapoint: "+datapointId);
         }
-
         // Get a reference to the CoordinatePlaneView
         coordinatePlaneView = view.findViewById(R.id.coordinate_plane_view);
         geoFenceView = view.findViewById(R.id.geofence_view);
@@ -87,31 +104,26 @@ public class AddGeoFragment extends Fragment {
         executor.submit(new Runnable() {
             @Override
             public void run() {
-                displaySavedData();
+                    displaySavedData(datapointId);
             }
         });
         // Initialize temporary PointF variable
         tempPointF = new PointF();
-
         editText = view.findViewById(R.id.geofence_name);
-
         // Add button to add random data point
         Button calibrate = view.findViewById(R.id.calibrate);
         calibrate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 generateDatapoint();
             }
         });
-
         // Set up the "Save Data" button
         Button saveDataButton = view.findViewById(R.id.savedatapoint);
         saveDataButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                saveData();
+                saveData(datapointId);
             }
         });
 
@@ -120,139 +132,78 @@ public class AddGeoFragment extends Fragment {
         clear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 deleteData();
-
+            }
+        });// Set up the "Back" button
+        Button back = view.findViewById(R.id.back_button);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Navigate back to the previous fragment
+                FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+                showMapFragment = showMapFragment.newInstance(datapointId);
+                fragmentManager.popBackStack();
             }
         });
         return view;
     }
 
     public void generateDatapoint() {
-
-
-        if (getArguments() != null) {
-            x = getArguments().getFloat("x");
-            y = getArguments().getFloat("y");
-            // Inflate the layout for this fragment
             ExecutorService executor = Executors.newSingleThreadExecutor();
             Handler handler = new Handler(Looper.getMainLooper());
             executor.execute(() -> {
-                //Background work here
-
                 PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
                 xmap = screenPoint.x;
                 ymap = screenPoint.y;
                 Log.d("MQTT", "x: "+x);
-                Log.d("MQTT", "x: "+y);
-
+                Log.d("MQTT", "y: "+y);
                 handler.post(() -> {
-                    // Add current position to coordinate plane view
                     geoFenceView.addDataPoint(screenPoint.x, screenPoint.y, true);
                     geoFenceView.invalidate();
-
-                    //UI Thread work here
                 });
             });
-        }
-
-
     }
-
-
-
-
-    private void displaySavedData() {
-        getAllDataPoints();
+    public void displaySavedData(String datapointId) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
+            DataPointDbHelper dbHelper = new DataPointDbHelper(getContext());
+            List<PointF> dataPoints = dbHelper.getSpecificDataPoints(datapointId);
+            dbHelper.close();
+            handler.post(() -> {
+                for (PointF dataPoint : dataPoints) {
+                    coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y, true);
+                }
+                for (PointF point : currentPositionPoints) {
+                    coordinatePlaneView.addDataPoint(point.x, point.y, false);
+                }
+                coordinatePlaneView.invalidate();
+            });
+        });
     }
-
-    public void saveData() {
+    public void saveData(String datapointId) {
         location_name = editText.getText().toString();
         if (!TextUtils.isEmpty(location_name))
         {
             if (tempPointF != null) {
                 List<PointF> GeoFencedataPoints = geoFenceView.getDataPoints();
-                // Create an instance of the GeofenceContract class
                 GeoFenceDbHelper geofenceContract = new GeoFenceDbHelper(getContext());
-                // Get a writable database
                 SQLiteDatabase db = geofenceContract.getWritableDatabase();
-                // Iterate over the data points and insert them into the database
                 ContentValues geofenceValues = new ContentValues();
                 geofenceValues.put(GeoFenceDbHelper.GeofenceEntry.COLUMN_NAME_NAME, location_name);
+                geofenceValues.put(GeoFenceDbHelper.GeofenceEntry.COLUMN_NAME_MAPS_ID, datapointId);
                 long geofenceId = db.insert(GeoFenceDbHelper.GeofenceEntry.TABLE_NAME, null, geofenceValues);
-                Log.d("MQTT", "jalan");
                 List<ContentValues> contentValuesList = new ArrayList<>();
                 for (PointF point : GeoFencedataPoints) {
                     ContentValues values = new ContentValues();
-                    values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID, 1);
+                    values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID, geofenceId);
                     values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X, point.x);
                     values.put(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y, point.y);
                     contentValuesList.add(values);
                     db.insert(GeoFenceDbHelper.GeofenceDataEntry.TABLE_NAME, null, values);
                 }
-                Log.d("API", String.valueOf(contentValuesList));
-                // Use an executor to send the geofence object to the Flask API
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                executor.submit(() -> {
-                    try {
-//                        String url = "http://192.168.2.6:8000/geofence/send";
-                        String url = "http://192.168.4.199:8000/geofence/send";
-                        URL apiURL = new URL(url);
-
-                        // Create the connection
-                        HttpURLConnection connection = (HttpURLConnection) apiURL.openConnection();
-                        connection.setRequestMethod("GET");
-                        connection.setRequestProperty("Content-Type", "application/json");
-
-                        connection.setDoOutput(true);
-
-                        // Create the request body with the geofence object as JSON
-                        // Retrieve the user_id from SharedPreferences
-                        SharedPreferences sharedPreferences = getContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-                        String userIdJson = sharedPreferences.getString("user_id", null); // Retrieve the JSON string
-
-
-                        Gson gson = new Gson();
-                        String dataPointsJson = contentValuesList.toString();
-                        JsonObject geofenceObject = new JsonObject();
-                        geofenceObject.addProperty("nama_lokasi", location_name);
-                        geofenceObject.addProperty("user_id", userIdJson);
-                        geofenceObject.addProperty("dataPoints",  dataPointsJson);
-                        String requestBody = geofenceObject.toString();
-                        Log.d("API", String.valueOf(geofenceObject));
-
-                        // Write the request body to the connection
-                        OutputStream outputStream = connection.getOutputStream();
-                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
-                        writer.write(requestBody);
-                        writer.flush();
-                        writer.close();
-                        outputStream.close();
-
-                        // Send the request to the Flask API
-                        int responseCode = connection.getResponseCode();
-                        if (responseCode == HttpURLConnection.HTTP_OK) {
-                            // Geofence object sent successfully
-                            Log.d("API", "Geofence object sent successfully");
-                        } else {
-                            // Error sending the geofence object
-                            Log.e("API", "Error sending geofence object: " + responseCode);
-                        }
-
-                        // Close the connection
-                        connection.disconnect();
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-                // Clear the temporary PointF variable
                 GeoFencedataPoints.clear();
-                // Close the database
                 db.close();
-
-                    // Show a message to the user
                     Toast.makeText(getContext(), "Data saved", Toast.LENGTH_SHORT).show();
                 getActivity().getSupportFragmentManager().popBackStack();
                 } else {
@@ -284,30 +235,7 @@ public class AddGeoFragment extends Fragment {
 
     }
 
-    //maps
-    private void getAllDataPoints() {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                DataPointDbHelper dbHelper = new DataPointDbHelper(getContext());
-                List<PointF> dataPoints = dbHelper.getAllDataPoints();
-                dbHelper.close();
-                for (PointF dataPoint : dataPoints) {
-                    coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y, true);
-                }
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        coordinatePlaneView.invalidate();
 
-                    }
-                });
-            }
-        });
-
-        executorService.shutdown();
-    }
 
     public void updateData(float x, float y){
         // Inflate the layout for this fragment
@@ -317,18 +245,64 @@ public class AddGeoFragment extends Fragment {
             PointF screenPoint = coordinatePlaneView.mapToScreen(x,y);
             xmap = screenPoint.x;
             ymap = screenPoint.y;
-//            Log.d("MQTT", "x: "+x);
-//            Log.d("MQTT", "y: "+y);
-            // Add current position to coordinate plane view
-            //Background work here
             handler.post(() -> {
             coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, false);
             coordinatePlaneView.invalidate();
-
-
                 //UI Thread work here
             });
         });
     }
 
+    public void connectmqtt(String datapointId){
+        // Inflate the layout for this fragment
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        executor.execute(() -> {
+            //Background work here
+            DataPointDbHelper dbHelper = new DataPointDbHelper(getContext());
+            topics = dbHelper.getTopics(datapointId);
+            dbHelper.close();
+            String clientId = MqttClient.generateClientId();
+            Log.d("MQTT", "Paho: "+clientId);
+            try {
+                client = new MqttClient("tcp://broker.hivemq.com:1883", clientId, new MemoryPersistence());
+//                client = new MqttClient("tcp://192.168.185.12:1883", clientId, new MemoryPersistence());
+                client.setCallback(this);
+                client.connect();
+                client.subscribe(topics, 0);
+                Log.d("MQTT", "subs");
+                Thread.sleep(5000);
+            } catch (MqttException | InterruptedException e) {
+                Log.d("MQTT", "Error");
+                e.printStackTrace();
+            }
+            handler.post(() -> {
+                //UI Thread work here
+            });
+        });
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        if ( topic.equals(topics)) {
+            String payload = new String(message.getPayload());
+            try {
+                JSONObject json = new JSONObject(payload);
+                x = (float) json.getDouble("x");
+                y = (float) json.getDouble("y");
+                updateData(x, y);
+            } catch (NumberFormatException e) {}
+        }
+    }
+    @Override
+    public void connectionLost(Throwable cause) {
+        connectmqtt(datapointId);
+    }
+
+
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) {
+
+    }
 }

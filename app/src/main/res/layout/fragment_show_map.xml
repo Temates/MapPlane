@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".showMapFragment">
+
+    <LinearLayout
+        android:id="@+id/button_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true"
+        android:gravity="center_horizontal">
+
+        <Button
+            android:id="@+id/back_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:text="Back"
+            android:textSize="13sp"  />
+
+        <Button
+            android:id="@+id/geofence"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:text="GeoFence"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/history"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:text="History"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/plane_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="70dp"
+        >
+
+    <com.example.mapplane.CoordinatePlaneView
+        android:id="@+id/coordinate_plane_view"
+        android:layout_width="350dp"
+        android:layout_height="500dp"
+        android:layout_centerHorizontal="true"
+         />
+
+    <com.example.mapplane.GeofencePlot
+        android:id="@+id/geofence_plot"
+        android:layout_width="350dp"
+        android:layout_height="500dp"
+        android:layout_centerHorizontal="true"
+
+        />
+
+    </RelativeLayout>
+
+
+        <Button
+            android:id="@+id/clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_centerInParent="true"
+            android:text="Clear"
+            android:backgroundTint="@color/teal_200"
+            android:layout_below="@+id/plane_layout"
+            android:textColor="@color/white" />
+
+
+
+
+</RelativeLayout>

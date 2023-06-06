@@ -7,10 +7,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
@@ -42,15 +51,20 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 public class Auth extends AppCompatActivity {
 
-    ImageView google_img;
-    GoogleSignInOptions gso;
-    GoogleSignInClient gsc;
-    FirebaseAuth firebaseAuth;
+    EditText eml, pwd;
+    Button Login;
+    String email, password;
 
 
 
@@ -58,98 +72,79 @@ public class Auth extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_auth);
+        eml = findViewById(R.id.email);
+        pwd = findViewById(R.id.password);
+        Login = findViewById(R.id.Login);
 
-
-        google_img = findViewById(R.id.google);
-        gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.my_server_client_id))
-                .requestEmail()
-                .build();
-
-
-        // Initialize Firebase Auth
-        firebaseAuth = FirebaseAuth.getInstance();
-
-        gsc = GoogleSignIn.getClient(this,gso);
-        google_img.setOnClickListener(new View.OnClickListener() {
+        Login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                email = eml.getText().toString();
+                password = pwd.getText().toString();
+                Log.d("MQTT", email);
+                doLogin(email, password);
+            }
+        });
+        eml.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // Not used in this implementation
+            }
 
-                SignIn();
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Not used in this implementation
+            }
 
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.toString().endsWith("\n")) {
+                    // Remove the newline character
+                    s.replace(s.length() - 1, s.length(), "");
+
+                    // Move focus to the next EditText
+                    pwd.requestFocus();
+                }
+            }
+        });
+
+        pwd.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    // Close the keyboard
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    return true;
+                }
+                return false;
             }
         });
 
     }
-    private void SignIn() {
-        Intent intent = gsc.getSignInIntent();
-        startActivityForResult(intent, 100);
 
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 100 ){
-            // Result returned from launching the Google Sign-In Intent
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            try {
-            // Google Sign-In was successful, authenticate with Firebase
-            GoogleSignInAccount account = task.getResult(ApiException.class);
-            firebaseAuthWithGoogle(account);
-
-//                // Get the user's email and access token
-//                String email = account.getEmail();
-//                String accessToken = account.getIdToken(); // or account.getServerAuthCode() if available
-//
-//                // Add debug statements to check the values
-//                Log.d("Auth", "Email: " + email);
-//                Log.d("Auth", "Access Token: " + accessToken);
-//                // Make a POST request to your Flask API to perform the login
-//                performLogin(email, accessToken);
-
-//            performLogin(user.getEmail(), idToken);
-            new MainActivity();
-            }catch (ApiException e){
-                Toast.makeText(this, "Error",Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private void performLogin(String email, String accessToken) {
+    private void doLogin(String email, String password) {
         try {
-            // Construct the request URL
-            String urlString = "http://192.168.4.199:8000/login";
-//            String urlString = "http://192.168.1.6:8000/login";
+            String urlString = "http://192.168.185.12:8000/login";
             URL url = new URL(urlString);
-
-            // Create the connection
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Authorization", "Bearer " + accessToken); // Add the Firebase ID token to the Authorization header
             connection.setDoOutput(true);
-
-            // Construct the request body
+            String encryptedPassword = AESHelper.encrypt(password);
             JSONObject requestBody = new JSONObject();
             requestBody.put("email", email);
-            requestBody.put("idToken", accessToken);
+            requestBody.put("password", encryptedPassword);
             String requestBodyString = requestBody.toString();
-
-            // Execute the network operation on a background thread
             Executor executor = Executors.newSingleThreadExecutor();
             executor.execute(() -> {
                 try {
-                    // Write the request body to the connection
                     OutputStream outputStream = connection.getOutputStream();
                     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
                     writer.write(requestBodyString);
                     writer.flush();
                     writer.close();
                     outputStream.close();
-
-                    // Get the response from the connection
                     int responseCode = connection.getResponseCode();
                     InputStream inputStream;
                     if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -157,8 +152,6 @@ public class Auth extends AppCompatActivity {
                     } else {
                         inputStream = connection.getErrorStream();
                     }
-
-                    // Read the response from the input stream
                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
                     StringBuilder responseBuilder = new StringBuilder();
                     String line;
@@ -167,98 +160,135 @@ public class Auth extends AppCompatActivity {
                     }
                     reader.close();
                     String responseString = responseBuilder.toString();
-                    // Store the session cookies
-
-                    // Save the session cookie to SharedPreferences
-                    SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("user_id", responseString); // Store the JSON string in SharedPreferences
-                    editor.apply();
-
-                    // Add a debug statement to check the response
+                    try {
+                        JSONObject jsonObject = new JSONObject(responseString);
+                        String token = jsonObject.getString("token");
+                        String userId = jsonObject.getString("id");
+                        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString("token", token);
+                        editor.putString("user_id", userId);
+                        editor.apply();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                     Log.d("Auth", "Response: " + responseString);
-                        runOnUiThread(() -> {
-                            // Update UI or perform actions on the main thread
-                            new MainActivity();
-                        });
-
-
-                    // Close the connection
+                    runOnUiThread(() -> {
+                       MainActivity();
+                    });
                     connection.disconnect();
                 } catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(() -> {
-                        // Show a toast or perform actions on the main thread
-//                        Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
                     });
                 }
             });
         } catch (Exception e) {
             e.printStackTrace();
-//            Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Login failed", Toast.LENGTH_SHORT).show();
         }
     }
-    private void firebaseAuthWithGoogle(GoogleSignInAccount account) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
-        firebaseAuth.getInstance().signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign-in success, update UI with the signed-in user's information
-                            Log.d("Auth", "signInWithCredential:success");
-                            FirebaseUser user = firebaseAuth.getInstance().getCurrentUser();
-                            if (user != null) {
-                                // Get the access token
-                                user.getIdToken(false)
-                                        .addOnCompleteListener(new OnCompleteListener<GetTokenResult>() {
-                                            @Override
-                                            public void onComplete(@NonNull Task<GetTokenResult> task) {
-                                                if (task.isSuccessful()) {
-                                                    // Access token retrieved successfully
-                                                    String accessToken = task.getResult().getToken();
-                                                    Log.d("Auth", accessToken);
-                                                    // Use the access token for authentication or API calls
-                                                    // You can pass the access token to your server for authentication
-
-                                                    // Example: Call your Flask API passing the access token
-                                                    performLogin(user.getEmail(), accessToken);
-                                                } else {
-                                                    // Failed to retrieve access token
-                                                    // Handle the error
-                                                }
-                                            }
-                                        });
-                            }
-
-//                            String idToken = user.getIdToken(false).getResult().getToken();
-//                            // Perform necessary actions with the idToken and accessToken
-//                            performLogin(user.getEmail(), idToken);
-                            MainActivity();
-                        } else {
-                            // Sign-in failed, display a message to the user
-                            Log.w("Auth", "signInWithCredential:failure", task.getException());
-                            Toast.makeText(Auth.this, "Authentication failed",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+    private void doValidation() {
+        try {
+            String urlString = "http://192.168.185.12:8000/validasi";
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
+            SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+            String token = sharedPreferences.getString("token", null);
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("token", token);
+            String requestBodyString = requestBody.toString();
+            Executor executor = Executors.newSingleThreadExecutor();
+            executor.execute(() -> {
+                try {
+                    OutputStream outputStream = connection.getOutputStream();
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+                    writer.write(requestBodyString);
+                    writer.flush();
+                    writer.close();
+                    outputStream.close();
+                    int responseCode = connection.getResponseCode();
+                    InputStream inputStream;
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        inputStream = connection.getInputStream();
+                    } else {
+                        inputStream = connection.getErrorStream();
                     }
-                });
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder responseBuilder = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
+                    }
+                    reader.close();
+                    String responseString = responseBuilder.toString();
+                    if (responseString.equals("True")){
+                        MainActivity();
+                    }
+                    if (responseString.equals("False")){
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.clear();
+                        editor.apply();
+                        Toast.makeText(this, "Sesi telah habis silahkan melakukan Login kembali!", Toast.LENGTH_SHORT).show();
+                    }
+                    Log.d("Auth", "Response: " + responseString);
+                    runOnUiThread(() -> {
+                    });
+                    connection.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() -> {
+                    });
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
+    public static class AESHelper {
+        private static final String SECRET_KEY = "this_is_secretka"; // Replace with your own secret key
+        private static final String INIT_VECTOR = "y19mg85vk8tn1oih"; // Replace with your own initialization vector
+
+        public static String encrypt(String plaintext) {
+            try {
+                IvParameterSpec ivParameterSpec = new IvParameterSpec(INIT_VECTOR.getBytes(StandardCharsets.UTF_8));
+                SecretKeySpec secretKeySpec = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "AES");
+
+                Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+                cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+
+                byte[] encrypted = cipher.doFinal(plaintext.getBytes());
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    return Base64.getEncoder().encodeToString(encrypted);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
     @Override
     protected void onStart() {
         super.onStart();
-        // Check if the user is already signed in (e.g., if they have an active session)
-        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
-        if (currentUser != null) {
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        String token = sharedPreferences.getString("token", null);
+        String user_id = sharedPreferences.getString("user_id", null);
+        if (token != null && user_id != null && !token.isEmpty() && !user_id.isEmpty()) {
             // User is already signed in, proceed to the main activity
-            MainActivity();
+            doValidation();
+
         }
     }
-
     private void MainActivity() {
         finish();
-        Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+        Intent intent = new Intent(Auth.this,MainActivity.class);
         startActivity(intent);
     }
+
 }

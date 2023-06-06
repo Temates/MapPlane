@@ -52,7 +52,7 @@ public class GeofencePlot extends GeoFenceView{
         try {
             JSONArray jsonArray = new JSONArray(jsonData);
             geofencePoints.clear();
-            Log.d("MQTT", String.valueOf(jsonData));
+//            Log.d("MQTT", String.valueOf(jsonData));/
 
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jsonObject = jsonArray.getJSONObject(i);

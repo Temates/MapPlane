@@ -6,9 +6,15 @@
         <entry key="..\:/MapPlane/app/src/main/res/layout/activity_auth.xml" value="0.20104166666666667" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/activity_main.xml" value="0.25" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_add_geo.xml" value="0.2015625" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_create_map.xml" value="0.2296875" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_edit_map.xml" value="0.2526041666666667" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_geo_fence.xml" value="0.1774193548387097" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_history.xml" value="0.25625" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_history_list.xml" value="0.26510416666666664" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_home_page.xml" value="0.25052083333333336" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/fragment_show_map.xml" value="0.26666666666666666" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/history_list_layout.xml" value="0.26510416666666664" />
+        <entry key="..\:/MapPlane/app/src/main/res/layout/homepage_list_layout.xml" value="0.28125" />
         <entry key="..\:/MapPlane/app/src/main/res/layout/list_layout.xml" value="0.21927083333333333" />
         <entry key="..\:/MapPlane/app/src/main/res/menu/bottom_navigation.xml" value="0.25052083333333336" />
         <entry key="..\:/MapPlane/app/src/main/res/xml/network_security_config.xml" value="0.2546875" />

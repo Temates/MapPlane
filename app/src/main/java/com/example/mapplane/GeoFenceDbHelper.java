@@ -19,7 +19,8 @@
         private static final String SQL_CREATE_GEOFENCE_TABLE =
                 "CREATE TABLE " + GeofenceEntry.TABLE_NAME + " (" +
                         GeofenceEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                        GeofenceEntry.COLUMN_NAME_NAME + " TEXT)";
+                        GeofenceEntry.COLUMN_NAME_NAME + " TEXT," +
+                        GeofenceEntry.COLUMN_NAME_MAPS_ID + " INTEGER)";
 
         private static final String SQL_CREATE_GEOFENCE_DATA_TABLE =
                 "CREATE TABLE " + GeofenceDataEntry.TABLE_NAME + " (" +
@@ -40,6 +41,7 @@
         public final class GeofenceEntry implements BaseColumns {
             public static final String TABLE_NAME = "geofence";
             public static final String COLUMN_NAME_NAME = "name";
+            public static final String COLUMN_NAME_MAPS_ID = "Maps_id";
         }
 
         public final class GeofenceDataEntry implements BaseColumns {
@@ -70,38 +72,14 @@
             onUpgrade(db, oldVersion, newVersion);
 
         }
-        public ArrayList<String> getGeofenceNames(){
+        public ArrayList<String> getGeofenceNames(String mapsId){
             ArrayList<String> names = new ArrayList<>();
             SQLiteDatabase db = getReadableDatabase();
-            String[] projection = {GeoFenceDbHelper.GeofenceEntry.COLUMN_NAME_NAME};
+            String[] projection = {GeofenceEntry.COLUMN_NAME_NAME};
+            String selection = GeofenceEntry.COLUMN_NAME_MAPS_ID + " = ?";
+            String[] selectionArgs = {mapsId};
             Cursor cursor = db.query(
-                    GeoFenceDbHelper.GeofenceEntry.TABLE_NAME,
-                    projection,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-            while (cursor.moveToNext()) {
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(GeoFenceDbHelper.GeofenceEntry.COLUMN_NAME_NAME));
-                names.add(name);
-            }
-            cursor.close();
-            return names;
-
-        }
-        public List<PointF> getAllGeofencePoints(String geofenceId) {
-            List<PointF> dataPoints = new ArrayList<>();
-            SQLiteDatabase db = this.getReadableDatabase();
-            String[] projection = {
-                    GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X,
-                    GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y
-            };
-            String selection = GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID + " = ?";
-            String[] selectionArgs = {geofenceId};
-            Cursor cursor = db.query(
-                    GeoFenceDbHelper.GeofenceDataEntry.TABLE_NAME,
+                    GeofenceEntry.TABLE_NAME,
                     projection,
                     selection,
                     selectionArgs,
@@ -110,11 +88,139 @@
                     null
             );
             while (cursor.moveToNext()) {
-                float x = cursor.getFloat(cursor.getColumnIndexOrThrow(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_X));
-                float y = cursor.getFloat(cursor.getColumnIndexOrThrow(GeoFenceDbHelper.GeofenceDataEntry.COLUMN_NAME_Y));
-                dataPoints.add(new PointF(x, y));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(GeofenceEntry.COLUMN_NAME_NAME));
+                names.add(name);
             }
             cursor.close();
-            return dataPoints;
+            return names;
         }
+
+
+        public List<List<PointF>> getAllGeofencePointsByMapId(String mapsId) {
+            List<List<PointF>> geofenceList = new ArrayList<>();
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            // Query the geofence table to get the geofence IDs for the given mapsId
+            String[] geofenceProjection = {GeofenceEntry._ID};
+            String geofenceSelection = GeofenceEntry.COLUMN_NAME_MAPS_ID + " = ?";
+            String[] geofenceSelectionArgs = {mapsId};
+            Cursor geofenceCursor = db.query(
+                    GeofenceEntry.TABLE_NAME,
+                    geofenceProjection,
+                    geofenceSelection,
+                    geofenceSelectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            while (geofenceCursor.moveToNext()) {
+                int geofenceId = geofenceCursor.getInt(geofenceCursor.getColumnIndexOrThrow(GeofenceEntry._ID));
+
+                // Query the geofence data table to get the points for each geofence
+                String[] pointsProjection = {
+                        GeofenceDataEntry.COLUMN_NAME_X,
+                        GeofenceDataEntry.COLUMN_NAME_Y
+                };
+                String pointsSelection = GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID + " = ?";
+                String[] pointsSelectionArgs = {String.valueOf(geofenceId)};
+                Cursor pointsCursor = db.query(
+                        GeofenceDataEntry.TABLE_NAME,
+                        pointsProjection,
+                        pointsSelection,
+                        pointsSelectionArgs,
+                        null,
+                        null,
+                        null
+                );
+
+                List<PointF> dataPoints = new ArrayList<>();
+                while (pointsCursor.moveToNext()) {
+                    float x = pointsCursor.getFloat(pointsCursor.getColumnIndexOrThrow(GeofenceDataEntry.COLUMN_NAME_X));
+                    float y = pointsCursor.getFloat(pointsCursor.getColumnIndexOrThrow(GeofenceDataEntry.COLUMN_NAME_Y));
+                    dataPoints.add(new PointF(x, y));
+                }
+                pointsCursor.close();
+
+                geofenceList.add(dataPoints);
+            }
+            geofenceCursor.close();
+
+            return geofenceList;
+        }
+        public ArrayList<String> getGeofenceNamesByMapId(String mapsId) {
+            ArrayList<String> names = new ArrayList<>();
+            SQLiteDatabase db = getReadableDatabase();
+            String[] projection = {GeofenceEntry.COLUMN_NAME_NAME};
+            String selection = GeofenceEntry.COLUMN_NAME_MAPS_ID + " = ?";
+            String[] selectionArgs = {mapsId};
+            Cursor cursor = db.query(
+                    GeofenceEntry.TABLE_NAME,
+                    projection,
+                    selection,
+                    selectionArgs,
+                    null,
+                    null,
+                    null
+            );
+            while (cursor.moveToNext()) {
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(GeofenceEntry.COLUMN_NAME_NAME));
+                names.add(name);
+            }
+            cursor.close();
+            return names;
+        }
+
+        public List<PointF> getGeofencepointswithMapId(String mapsId) {
+            List<PointF> geofencePoints = new ArrayList<>();
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            // Query the geofence table to get the geofence IDs for the given mapsId
+            String[] geofenceProjection = {GeofenceEntry._ID};
+            String geofenceSelection = GeofenceEntry.COLUMN_NAME_MAPS_ID + " = ?";
+            String[] geofenceSelectionArgs = {mapsId};
+            Cursor geofenceCursor = db.query(
+                    GeofenceEntry.TABLE_NAME,
+                    geofenceProjection,
+                    geofenceSelection,
+                    geofenceSelectionArgs,
+                    null,
+                    null,
+                    null
+            );
+
+            while (geofenceCursor.moveToNext()) {
+                int geofenceId = geofenceCursor.getInt(geofenceCursor.getColumnIndexOrThrow(GeofenceEntry._ID));
+
+                // Query the geofence data table to get the points for each geofence
+                String[] pointsProjection = {
+                        GeofenceDataEntry.COLUMN_NAME_X,
+                        GeofenceDataEntry.COLUMN_NAME_Y
+                };
+                String pointsSelection = GeofenceDataEntry.COLUMN_NAME_GEOFENCE_ID + " = ?";
+                String[] pointsSelectionArgs = {String.valueOf(geofenceId)};
+                Cursor pointsCursor = db.query(
+                        GeofenceDataEntry.TABLE_NAME,
+                        pointsProjection,
+                        pointsSelection,
+                        pointsSelectionArgs,
+                        null,
+                        null,
+                        null
+                );
+
+                while (pointsCursor.moveToNext()) {
+                    float x = pointsCursor.getFloat(pointsCursor.getColumnIndexOrThrow(GeofenceDataEntry.COLUMN_NAME_X));
+                    float y = pointsCursor.getFloat(pointsCursor.getColumnIndexOrThrow(GeofenceDataEntry.COLUMN_NAME_Y));
+                    geofencePoints.add(new PointF(x, y));
+                }
+                pointsCursor.close();
+            }
+            geofenceCursor.close();
+
+            return geofencePoints;
+        }
+
+
+
     }

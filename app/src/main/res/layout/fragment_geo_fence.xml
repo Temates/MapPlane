@@ -1,21 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
+    android:orientation="vertical"
     tools:context=".GeoFence">
 
     <!-- TODO: Update blank fragment layout -->
-
-    <Button
-        android:id="@+id/addgeofence"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="add geofence"
-        android:layout_marginTop="10dp"
-        android:layout_centerHorizontal="true"
-        />
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/back_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:text="Back"
+            android:textSize="15sp" />
+        <Button
+            android:id="@+id/addgeofence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="add geofence"
+            android:layout_weight="1"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/teal_200"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            />
+
+
+    </LinearLayout>
+
 
 
     <LinearLayout
@@ -23,19 +45,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
-        android:layout_below="@id/addgeofence"
         android:orientation="vertical">
-
-
 
             <ListView
                 android:id="@+id/lv1"
                 android:layout_width="wrap_content"
-                android:layout_height="225dp"
-                android:divider="#FFFFFF"
-                android:dividerHeight="1dp"
-                android:listSelector="#000000" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="50dp"
+                android:layout_weight="1" />
 
     </LinearLayout>
 
-</RelativeLayout>
+</LinearLayout>

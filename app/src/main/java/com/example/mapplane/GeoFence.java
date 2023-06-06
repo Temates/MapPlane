@@ -38,15 +38,22 @@ import java.util.concurrent.Executors;
 
 
 public class GeoFence extends Fragment {
-    GoogleSignInOptions gso;
-    GoogleSignInClient gsc;
+
     GeoFenceDbHelper geoDB;
     SQLiteDatabase sqLiteDatabase;
     String name[];
     int id[];
+    AddGeoFragment addGeoFragment;
+    String datapointId;
+    showMapFragment showMapFragment;
 
-    ListView listView;
-
+    public static GeoFence newInstance(String datapointId) {
+        GeoFence fragment = new GeoFence();
+        Bundle args = new Bundle();
+        args.putString("datapointId", datapointId);
+        fragment.setArguments(args);
+        return fragment;
+    }
     public GeoFence() {
         // Required empty public constructor
     }
@@ -60,91 +67,69 @@ public class GeoFence extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-
         // Inflate the layout for this fragment
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
+
         geoDB = new GeoFenceDbHelper(getContext());
-
-
-
         View view = inflater.inflate(R.layout.fragment_geo_fence,container,false);
         Button addGeo = view.findViewById(R.id.addgeofence);
+        if (getArguments() != null) {
+            datapointId = getArguments().getString("datapointId");
+        }
         addGeo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                addGeofence(view);
+                    addGeofence(datapointId);
             }
         });
-
-
+        Button back = view.findViewById(R.id.back_button);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Navigate back to the previous fragment
+                FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+                showMapFragment = showMapFragment.newInstance(datapointId);
+                Fragment currentFragment = fragmentManager.findFragmentById(R.id.fragment_container);
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction.remove(currentFragment); // Remove the current showMapFragment
+                fragmentTransaction.replace(R.id.fragment_container, showMapFragment); // Replace with the new instance
+                fragmentTransaction.commit();
+            }
+        });
         displaylist(view);
-
-
-
         return view;
     }
 
     public void displaylist(View view) {
+        try {
         Executor executor = Executors.newSingleThreadExecutor();
         executor.execute(new Runnable() {
-            @Override
-            public void run() {
-
-                //Background work here
-
-                // use the data here
-                try {
-                    Executor executor = Executors.newSingleThreadExecutor();
-                    executor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Perform long-running operation in background thread
-                            // ...
-                            sqLiteDatabase = geoDB.getReadableDatabase();
-                            Cursor cursor = sqLiteDatabase.rawQuery("select * from geofence",null);
-                            if (cursor.getCount()>0){
-                                id = new int[cursor.getCount()];
-                                name = new String[cursor.getCount()];
-                                int i = 0;
-                                while (cursor.moveToNext()){
-                                    id[i] = cursor.getInt(0);
-                                    name[i] = cursor.getString(1);
-                                    i++;
-                                }
-                                cursor.close();
-
-                            }
-
-
-                            // Update UI on the main thread
-                            getActivity().runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    // Update UI elements with new data
-                                    // ...
-                                    dis(view);
-
-
-                                }
-                            });
-                        }
-                    });
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+        @Override
+        public void run() {
+            sqLiteDatabase = geoDB.getReadableDatabase();
+            Cursor cursor = sqLiteDatabase.rawQuery("select * from geofence where Maps_id=?",new String[]{datapointId});
+            if (cursor.getCount()>0){
+                id = new int[cursor.getCount()];
+                name = new String[cursor.getCount()];
+                int i = 0;
+                while (cursor.moveToNext()){
+                    id[i] = cursor.getInt(0);
+                    name[i] = cursor.getString(1);
+                    i++;
                 }
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        //UI Thread work here
-                    }
-                });
+                cursor.close();
             }
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dis(view);
+                }
+            });
+        }
         });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void dis(View view){
@@ -153,15 +138,13 @@ public class GeoFence extends Fragment {
         listView.setAdapter(adapter);
     }
 
-
-    private void addGeofence(View view) {
+    private void addGeofence(String datapointId) {
         FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        Fragment addgeoFragment = new AddGeoFragment();
-        fragmentTransaction.replace(R.id.fragment_container, addgeoFragment);
+        addGeoFragment = addGeoFragment.newInstance(datapointId);
+        fragmentTransaction.replace(R.id.fragment_container, addGeoFragment);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
-
     }
 
     @Override
@@ -169,107 +152,6 @@ public class GeoFence extends Fragment {
         super.onDestroy();
         geoDB.close();
     }
-//    private void Reqtable(String email, String name) throws Exception {
-//
-//        String url = "http://192.168.0.9:3000/list_user/";
-//        URL obj = new URL(url);
-//        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-//
-//        con.setRequestMethod("GET");
-//        con.setRequestProperty("User-Agent", "Mozilla/5.0");
-//        int responseCode = con.getResponseCode();
-//        con.connect();
-//        BufferedReader in = new BufferedReader(
-//                new InputStreamReader(con.getInputStream())
-//        );
-//        String input;
-//        StringBuilder response = new StringBuilder();
-//        while ((input=in.readLine())!=null){
-//            response.append(input);
-//        }
-//        in.close();
-//        Log.d("data", response.toString());
-//        JSONObject jObj = new JSONObject(response.toString());
-//        //JSONObject jAttend = jObj.getJSONObject("attend");
-//        JSONArray myArray = jObj.getJSONArray("checkin");
-//
-//        //  JSONArray myArray = new JSONArray(response.toString());
-//        ArrayList<String> resultin = new ArrayList<>();
-//        if (myArray.length() == 0) {
-//            resultin.add("Check In:");
-//            resultin.add("\n");
-//        }
-//        else {
-//            resultin.add("Check In:");
-//            for (int i = 0; i < myArray.length(); i++) {
-//                JSONObject arrObj = myArray.getJSONObject(i);
-//                System.out.println("DATA : " + myArray);
-//                //String No_attend = arrObj.getString("No");
-//                String Date_in = arrObj.getString("Date");
-//                String Time_in = arrObj.getString("Time");
-//                //String Data = "No. Absen: "+No_attend+"\n"+"Tanggal: "+Date_attend+ "\n"+ "Jam: " + Time_attend;
-//                String Data = "Tanggal: " + Date_in + "\n" + "Jam: " + Time_in;
-//                resultin.add(Data);
-//                //            result.add(arrObj.getString("Date_attend"));
-//                //            result.add(arrObj.getString("Time_attend"));
-//                //            result.add(arrObj.getString("No"));
-////            result.add(arrObj.getString("Date_attend"));
-////            result.add(arrObj.getString("Time_attend"));
-//                //result.add(arrObj.getString("title"));
-//            }
-//
-//        }
-//
-//        ArrayList<String> resultout = new ArrayList<>();
-//        JSONArray Arr = jObj.getJSONArray("checkout");
-//        if (Arr.length() == 0) {
-//            resultout.add("Check Out:");
-//            resultout.add("\n");
-//        }else{
-//            System.out.println("DATA : " + Arr);
-//            resultout.add("Check Out:");
-//            for (int i = 0; i < Arr.length(); i++) {
-//                JSONObject arrObje = Arr.getJSONObject(i);
-//                System.out.println("DATA : " + Arr);
-//                //String No_salary = arrObje.getString("No");
-//                String Date_out = arrObje.getString("Date");
-//                String Time_out = arrObje.getString("Time");
-//                //String Data = "No. Gaji: "+No_salary+"\n"+"Tanggal: "+Date_salary+ "\n"+ "Jam: " + Time_salary;
-//                String Data = "Tanggal: " + Date_out + "\n" + "Jam: " + Time_out;
-//                resultout.add(Data);
-////            result.add(arrObj.getString("Date_attend"));
-////            result.add(arrObj.getString("Time_attend"));
-////            result.add(arrObj.getString("No"));
-////            result.add(arrObj.getString("Date_attend"));
-////            result.add(arrObj.getString("Time_attend"));
-//                //result.add(arrObj.getString("title"));
-//
-//            }
-//        }
-//
-//        //System.out.println(result_salary);
-//        MyData = resultin.toArray(new String[0]);
-//        otherData = resultout.toArray(new String[0]);
-//
-//        runOnUiThread(new Runnable() {
-//
-//            @Override
-//            public void run() {
-//
-//                CustomAdapter cAdapter =
-//                        new CustomAdapter(getApplicationContext(),MyData);
-//                CustomAdapter bAdapter =
-//                        new CustomAdapter(getApplicationContext(),otherData);
-//                mylv.setAdapter(cAdapter);
-//                mylv1.setAdapter(bAdapter);
-//            }
-//        });
-//
-////        mylv = (ListView) findViewById(R.id.lv1);
-////        CustomAdapter cAdapter =
-////                new CustomAdapter(getApplicationContext(),MyData);
-////        mylv.setAdapter(cAdapter);
-//
-////        return MyData + otherData;
-//    }
+
+
 }

@@ -2,11 +2,15 @@ package com.example.mapplane;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.PointF;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -15,170 +19,177 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.Toast;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class HomePage extends Fragment {
-    private CoordinatePlaneView coordinatePlaneView;
-    private GeofencePlot geofencePlot;
-    GoogleSignInClient gsc;
-    GoogleSignInOptions gso;
 
-    FirebaseAuth firebaseAuth;
-
-    private List<PointF> currentPositionPoints = new ArrayList<>();
-    private Context context;
+    SQLiteDatabase sqLiteDatabase;
+    DataPointDbHelper dataPointDbHelper;
+    private FragmentManager fragmentManager;
+    String name[];
+    int id[];
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        this.context = context;
-    }
-    public void setGoogleSignInClient(GoogleSignInClient googleSignInClient) {
-        this.gsc = googleSignInClient;
     }
 
-
-    public HomePage(Context context) {
-        this.context = context;
-    }
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-
         View view = inflater.inflate(R.layout.fragment_home_page, container, false);
-        // Get a reference to the CoordinatePlaneView
-        coordinatePlaneView = view.findViewById(R.id.coordinate_plane_view);
-//        geoFenceView = view.findViewById(R.id.geofence_view);
-        geofencePlot = view.findViewById(R.id.geofence_plot);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Handler handler = new Handler(Looper.getMainLooper());
+        dataPointDbHelper = new DataPointDbHelper(getContext());
         Button logout = view.findViewById(R.id.logout);
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-
-        // Build a GoogleSignInClient with the options specified by gso.
-        gsc = GoogleSignIn.getClient(getActivity(), gso);
+        fragmentManager = requireActivity().getSupportFragmentManager();
         logout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 SignOut();
             }
         });
+        Button crtmap = view.findViewById(R.id.addmap);
+        crtmap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                createMapFragment();
+            }
+        });
 
-        displaySavedData();
-
-
-
+        displaylist(view);
         // Inflate the layout for this fragment
         return view;
     }
 
-    private void SignOut() {
-        FirebaseAuth.getInstance().signOut();
-        gsc.signOut().addOnCompleteListener(getActivity(), new OnCompleteListener<Void>() {
+    private void createMapFragment() {
+        FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        Fragment createmapFragment= new CreateMap();
+        fragmentTransaction.replace(R.id.fragment_container, createmapFragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
+    public void displaylist(View view) {
+       try {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(new Runnable() {
             @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                // Google Sign-In account cache cleared
-                // Proceed with signing in a new user
-                startActivity(new Intent(getActivity(), Auth.class));
-                getActivity().finish();
+            public void run() {
+                sqLiteDatabase = dataPointDbHelper.getReadableDatabase();
+                Cursor cursor = sqLiteDatabase.rawQuery("select * from maps",null);
+                if (cursor.getCount()>0){
+                    id = new int[cursor.getCount()];
+                    name = new String[cursor.getCount()];
+                    int i = 0;
+                    while (cursor.moveToNext()){
+                        id[i] = cursor.getInt(0);
+                        name[i] = cursor.getString(1);
+                        i++;
+                    }
+                    cursor.close();
+                }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dis(view);
+                    }
+                });
             }
         });
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public void displaySavedData() {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            DataPointDbHelper dbHelper = new DataPointDbHelper(getContext());
-            List<PointF> dataPoints = dbHelper.getAllDataPoints();
-            dbHelper.close();
-            handler.post(() -> {
-                for (PointF dataPoint : dataPoints) {
-                    coordinatePlaneView.addDataPoint(dataPoint.x, dataPoint.y, true);
-                }
-                for (PointF point : currentPositionPoints) {
-                    coordinatePlaneView.addDataPoint(point.x, point.y, false);
-                }
-                coordinatePlaneView.invalidate();
-            });
-        });
+    public void dis(View view){
+        HomePageAdaptor adapter = new HomePageAdaptor(fragmentManager,name,id);
+        ListView listView = view.findViewById(R.id.lv1);
+        listView.setAdapter(adapter);
     }
 
 
-    public void displayGeofenceData(List<String> geofenceIds){
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            GeoFenceDbHelper geoFenceDbHelper = new GeoFenceDbHelper(context);
-            ArrayList<String> names = geoFenceDbHelper.getGeofenceNames(); // Retrieve geofence names from the database
-            handler.post(() -> {
-                JSONArray mainArray = new JSONArray();
-                for (String geofenceId : geofenceIds) {
-                    List<PointF> geofencePointsFromDb = geoFenceDbHelper.getAllGeofencePoints(geofenceId);
-                    JSONArray pointsArray = new JSONArray();
-                    for (PointF point : geofencePointsFromDb) {
-                        JSONObject pointObject = new JSONObject();
-                        try {
-                            pointObject.put("x", point.x);
-                            pointObject.put("y", point.y);
-                            pointsArray.put(pointObject);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
+    private void SignOut() {
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        try {
+            String urlString = "http://192.168.185.12:8000/logout";
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
+            String token = sharedPreferences.getString("token", null);
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("token", token);
+            String requestBodyString = requestBody.toString();
+            Executor executor = Executors.newSingleThreadExecutor();
+            Handler handler = new Handler(Looper.getMainLooper());
+            executor.execute(() -> {
+                try {
+                    OutputStream outputStream = connection.getOutputStream();
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+                    writer.write(requestBodyString);
+                    writer.flush();
+                    writer.close();
+                    outputStream.close();
+                    int responseCode = connection.getResponseCode();
+                    InputStream inputStream;
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        inputStream = connection.getInputStream();
+                    } else {
+                        inputStream = connection.getErrorStream();
                     }
-                    JSONObject geofenceObject = new JSONObject();
-                    try {
-                        geofenceObject.put("points", pointsArray);
-                        mainArray.put(geofenceObject);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder responseBuilder = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
                     }
+                    reader.close();
+                    String responseString = responseBuilder.toString();
+                    Toast.makeText(getContext(), "Log Out!", Toast.LENGTH_SHORT).show();
+                    Log.d("Auth", "Response: " + responseString);
+                    getActivity().runOnUiThread(() -> {
+                    });
+                    // Close the connection
+                    connection.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    getActivity().runOnUiThread(() -> {
+                    });
                 }
-                geoFenceDbHelper.close();
-
-                geofencePlot.setGeofenceData(mainArray.toString());
-                geofencePlot.setGeofenceNames(names);
-                geofencePlot.invalidate();
+                handler.post(() -> {
+                    Toast.makeText(getContext(), "Log Out!", Toast.LENGTH_SHORT).show();
+                });
             });
-        });
-    }
-
-
-    public void updateData(float x, float y){
-        // Inflate the layout for this fragment
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            //Background work here
-            PointF screenPoint = coordinatePlaneView.mapToScreen(x, y);
-//            Log.d("MQTT", "x: "+x);
-//            Log.d("MQTT", "x: "+y);
-            // Add current position to coordinate plane view
-            coordinatePlaneView.addDataPoint(screenPoint.x, screenPoint.y, false);
-            coordinatePlaneView.invalidate();
-            handler.post(() -> {
-                //UI Thread work here
-            });
-        });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        editor.clear();
+        editor.apply();
+        startActivity(new Intent(getActivity(), Auth.class));
+        getActivity().finish();
     }
 
 }

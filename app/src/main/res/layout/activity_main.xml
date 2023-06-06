@@ -10,46 +10,11 @@
 
     <com.example.mapplane.CoordinatePlaneView
         android:id="@+id/coordinate_plane_view"
-        android:layout_width="316dp"
-        android:layout_height="534dp"
+        android:layout_width="350dp"
+        android:layout_height="500dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="70dp" />
-
-<!--    <Button-->
-<!--        android:id="@+id/clear"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginTop="24dp"-->
-<!--        android:layout_marginEnd="24dp"-->
-<!--        android:layout_below="@id/coordinate_plane_view"-->
-<!--        android:layout_alignParentRight="true"-->
-<!--        android:layout_toRightOf="@id/calibrate"-->
-<!--        android:text="Clear"-->
-<!--        />-->
-
-<!--    <Button-->
-<!--        android:id="@+id/savedatapoint"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginTop="24dp"-->
-<!--        android:layout_marginEnd="24dp"-->
-<!--        android:layout_marginStart="24dp"-->
-<!--        android:text="Save"-->
-<!--        android:layout_below="@id/coordinate_plane_view"-->
-<!--        android:layout_alignParentLeft="true"-->
-<!--        android:layout_toLeftOf="@id/calibrate"-->
-<!--        />-->
-
-<!--    <Button-->
-<!--        android:id="@+id/calibrate"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_below="@id/coordinate_plane_view"-->
-<!--        android:layout_centerHorizontal="true"-->
-<!--        android:layout_marginTop="24dp"-->
-<!--        android:layout_marginEnd="24dp"-->
-
-<!--        android:text="Calibrate" />-->
+        android:layout_marginTop="70dp"
+        />
 
     <FrameLayout
         android:id="@+id/fragment_container"
